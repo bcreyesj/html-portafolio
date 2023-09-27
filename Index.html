@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Gastos</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="navbar.css">
+    <style>
+        /* Estilos para la gráfica de pastel */
+        #chartContainer {
+            width: 300px;
+            height: 300px;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            cargarDatosDesdeLocalStorage();
+        });
+    </script>
+</head>
+<header class="header">
+    <div class="logo">
+        <img src="img/lucro.png" alt="Logo de la marca">
+    </div>
+    <nav>
+        <ul class="nav-links">
+            <li><a href="Contacto.html">Contacto</a></li>
+        </ul>
+    </nav>
+
+    <a onclick="openNav()" class="menu" href="#"><button>Menu</button></a>
+
+    <div id="mobile-menu" class="overlay">
+        <a onclick="closeNav()" href="" class="close">&times;</a>
+        <div class="overlay-content">
+            <a href="Contacto.html">Contacto</a>
+        </div>
+    </div>
+    <script type="text/javascript" src="nav.js"></script>
+</header>
+<body>
+    
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col">
+                <h1>Calculadora de Gastos</h1>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col">
+                <h2>Gráfico de Gastos</h2>
+                <button onclick="actualizarGrafico()" ondblclick="mostrarGastos();"
+                    class="btn btn-primary">Actualizar gráfica</button>
+
+                <div id="chartContainer" style="height: 600px; width: 600px;"></div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col">
+                <div class="row">
+                    <div class="col">
+                        <label for="saldoInicial">Saldo Inicial:</label>
+                    </div>
+                    <div class="col">
+                        <input type="number" id="saldoInicial" class="form-control">
+                    </div>
+                    <div class="col">
+                        <button onclick="actualizarSaldo()" class="btn btn-primary">Actualizar Saldo</button>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col">
+                        <label for="categoria">Categoría:</label>
+                    </div>
+                    <div class="col">
+                        <select id="categoria" class="form-control">
+                            <option value="entretenimiento">Entretenimiento</option>
+                            <option value="salud">Salud</option>
+                            <option value="comida">Comida</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label for="gasto">Gasto:</label>
+                    </div>
+                    <div class="col">
+                        <input type="number" id="gasto" class="form-control">
+                    </div>
+                    <div class="col">
+                        <button onclick="registrarGasto()" class="btn btn-primary">Registrar Gasto</button>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col">
+                        <label for="ahorro">Cantidad a Ahorrar:</label>
+                    </div>
+                    <div class="col">
+                        <input type="number" id="ahorro" class="form-control">
+                    </div>
+                    <div class="col">
+                        <button onclick="ahorrar()" class="btn btn-primary">Ahorrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col">
+                <h2>Lista de Gastos</h2>
+                <ul id="listaGastos" class="list-group"></ul>
+            </div>
+        </div>
+    </div>
+
+<!-- Bootstrap JS, Popper.js y jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    let gastos = [];
+    let saldoInicial = 0;
+    let ahorro = 0;
+
+    // Cargar datos desde localStorage al cargar la página
+    cargarDatosDesdeLocalStorage();
+
+    function cargarDatosDesdeLocalStorage() {
+        const saldoInicialGuardado = localStorage.getItem('saldoInicial');
+        if (saldoInicialGuardado) {
+            saldoInicial = parseFloat(saldoInicialGuardado);
+            document.getElementById('saldoInicial').value = saldoInicial;
+        }
+
+        const gastosGuardados = localStorage.getItem('gastos');
+        if (gastosGuardados) {
+            gastos = JSON.parse(gastosGuardados);
+            mostrarGastos();
+            actualizarGrafico();
+        }
+    }
+
+    function actualizarSaldo() {
+        const nuevoSaldo = parseFloat(document.getElementById('saldoInicial').value);
+
+        if (isNaN(nuevoSaldo) || nuevoSaldo < 0) {
+            alert('Ingrese un saldo válido.');
+            return;
+        }
+
+        saldoInicial = nuevoSaldo;
+        actualizarGrafico();
+        // Guardar el saldo en localStorage
+        localStorage.setItem('saldoInicial', saldoInicial);
+    }
+
+    function registrarGasto() {
+        const categoria = document.getElementById('categoria').value;
+        const gasto = parseFloat(document.getElementById('gasto').value);
+
+        if (isNaN(gasto) || gasto <= 0) {
+            alert('Ingrese un gasto válido.');
+            return;
+        }
+
+        saldoInicial -= gasto;
+        actualizarGrafico();
+
+        const gastoObj = { categoria, gasto };
+        gastos.push(gastoObj);
+
+        // Guardar los gastos en localStorage
+        localStorage.setItem('gastos', JSON.stringify(gastos));
+        actualizarGrafico();
+        mostrarGastos();
+    }
+
+    function mostrarGastos() {
+    const listaGastosFormulario = document.getElementById('listaGastosFormulario');
+    listaGastosFormulario.innerHTML = '';  // Limpiar la lista
+
+    gastos.forEach(gasto => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `Categoría: ${gasto.categoria}, Gasto: $${gasto.gasto.toFixed(2)}`;
+        listaGastosFormulario.appendChild(listItem);
+    });
+}
+
+
+    function ahorrar() {
+        const cantidadAhorro = parseFloat(document.getElementById('ahorro').value);
+
+        if (isNaN(cantidadAhorro) || cantidadAhorro <= 0) {
+            alert('Ingrese una cantidad de ahorro válida.');
+            return;
+        }
+
+        saldoInicial -= cantidadAhorro;
+        ahorro += cantidadAhorro;
+        actualizarGrafico();
+    }
+    function actualizarGrafico() {
+    // Colores para los segmentos: amarillo, azul, rojo, verde
+    const colores = ["#C6BC82", "#007BFF", "#FF0000", "#008000", "#FFD700"];
+
+    // Agrupar gastos por categoría y calcular el total para cada categoría
+    const categoriasGastos = gastos.reduce((categorias, gasto) => {
+        const categoria = gasto.categoria;
+        const monto = gasto.gasto;
+
+        if (categorias[categoria]) {
+            categorias[categoria] += monto;
+        } else {
+            categorias[categoria] = monto;
+        }
+
+        return categorias;
+    }, {});
+
+    // Convertir el objeto en un array de dataPoints para la gráfica
+    const dataPoints = Object.keys(categoriasGastos).map((categoria, index) => ({
+        y: categoriasGastos[categoria],
+        label: categoria,
+        color: colores[index % colores.length]
+    }));
+
+    // Agregar el saldo restante y los ahorros como dataPoints adicionales
+    dataPoints.push({ y: saldoInicial, label: "Saldo Restante", color: colores[colores.length - 1] });
+    dataPoints.push({ y: ahorro, label: "Ahorro", color: "#0E420E" });
+
+    // Crear un objeto de gráfico (instancia de CanvasJS.Chart) en el contenedor con ID "chartContainer"
+    const chart = new CanvasJS.Chart("chartContainer", {
+        animationEnabled: true,  // Habilita la animación del gráfico
+        title: {
+            text: "Resumen de Gastos y Ahorro"  // Establece el texto del título del gráfico
+        },
+        data: [{
+            type: "pie",  // Tipo de gráfico: pastel
+            startAngle: 240,  // Ángulo inicial de la gráfica (en grados)
+            yValueFormatString: "##0.00 'MXN'",  // Formato para los valores de la gráfica
+            indexLabel: "{label} {y}",  // Etiqueta para cada segmento (categoría y valor)
+            dataPoints: dataPoints
+        }]
+    });
+
+    // Renderizar el gráfico en el contenedor especificado
+    chart.render();
+}
+
+  </script>
+</body>
+
+</html>
